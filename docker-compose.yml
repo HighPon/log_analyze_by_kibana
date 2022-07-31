@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  app:
+    container_name: "app"
+    build: ./app
+    volumes:
+      - ./app/api:/usr/src/server
+    logging:
+      # ログ出力先にfluentdを指定
+      driver: "fluentd"
+      options:
+        # fluentdサーバの宛先
+        fluentd-address: "localhost:24224"
+        # ログに付与するタグ
+        tag: "docker.{{.Name}}"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - fluentd
+  fluentd:
+    container_name: "fluentd"
+    build: ./fluentd
+    volumes:
+      - ./fluentd/config:/fluentd/etc
+    links:
+      - "elasticsearch"
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.3.0
+    container_name: "elasticsearch"
+    environment:
+      - "discovery.type=single-node"
+      - xpack.security.enabled=false
+    expose:
+      - "9200"
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.3.0
+    container_name: "kibana"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    # links:
+      # - "elasticsearch"
+    ports:
+      - "5601:5601"
