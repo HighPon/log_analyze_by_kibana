@@ -1,0 +1,1 @@
+### fastapiのアプリのログをkibanaで可視化
